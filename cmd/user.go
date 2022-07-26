@@ -81,6 +81,7 @@ var addUserCmd = &cobra.Command{
 				logrus.Fatalf("username cannot be empty")
 			}
 		}
+		userName = strings.ToLower(userName)
 
 		if password == "" {
 			var firstPw string
