@@ -104,6 +104,20 @@ steps:
     path: /go
 
 
+- name: publish
+  image: plugins/docker
+    #depends_on:
+    #api-tests
+  settings:
+    username: 
+      from_secret: REGISTRY_USER
+    password:
+      from_secret: REGISTRY_PASSWORD
+    repo: 
+      from_secret: REGISTRY_REPO
+    auto_tag: true
+
+
 services:
 - name: meilisearch
   image: getmeili/meilisearch:v0.25.2
