@@ -103,6 +103,21 @@ steps:
   - name: go-deps
     path: /go
 
+- name: build docker image
+  image: plugins/docker
+  settings:
+    username: 
+      from_secret: REGISTRY_USER
+    password: 
+      from_secret: REGISTRY_PASSWORD
+    repo: 
+      from_secret: REGISTRY_REPO
+    registry:
+      from_secret: REGISTRY_URL
+    tags:
+    - latest
+    - main
+
 
 services:
 - name: meilisearch
