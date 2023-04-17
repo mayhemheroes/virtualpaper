@@ -16,22 +16,13 @@ func mayhemit(bytes []byte) int {
         fuzzConsumer := fuzz.NewConsumer(bytes)
         
         switch num {
-            case 2:
+            case 1:
                 fuzzName, err := fuzzConsumer.GetString()
                 if err != nil {
                     return 0
                 }
 
                 process.GetHash(fuzzName)
-                return 0
-
-            case 1:
-                fuzzId, err := fuzzConsumer.GetString()
-                if err != nil {
-                    return 0
-                }
-
-                process.DeleteDocument(fuzzId)
                 return 0
 
             case 0:
