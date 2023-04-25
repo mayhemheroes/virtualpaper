@@ -59,7 +59,8 @@ jobs:
       fail-fast: false
       matrix:
         mayhemfile:
-          - mayhem/Mayhemfile
+          - mayhem/fuzz_virtualpaper_process
+          - mayhem/fuzz_virtualpaper_delete
 
     steps:
       - uses: actions/checkout@v3

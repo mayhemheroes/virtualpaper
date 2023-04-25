@@ -2,11 +2,11 @@
 project: virtualpaper
 
 # Target name (should be unique within the project)
-target: fuzzvirtualpaper
+target: fuzz_virtualpaper_process
 
 # List of commands used to test the target
 cmds:
 
     # Command used to start the target, "@@" is the input file
     # (when "@@" is omitted Mayhem defaults to stdin inputs)
-    - cmd: ./fuzzvirtualpaper.libfuzzer
+    - cmd: ./fuzz_virtualpaper_process.libfuzzer

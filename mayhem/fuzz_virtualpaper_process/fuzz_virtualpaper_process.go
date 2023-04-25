@@ -1,7 +1,6 @@
-package fuzzvirtualpaper
+package fuzz_virtualpaper_process
 
 import (
-    "strconv"
     fuzz "github.com/AdaLogics/go-fuzz-headers"
 
     "tryffel.net/go/virtualpaper/process"
@@ -9,9 +8,8 @@ import (
 
 func mayhemit(bytes []byte) int {
 
-    var num int
     if len(bytes) > 2 {
-        num, _ = strconv.Atoi(string(bytes[0]))
+        num := int(bytes[0])
         bytes = bytes[1:]
         fuzzConsumer := fuzz.NewConsumer(bytes)
         
