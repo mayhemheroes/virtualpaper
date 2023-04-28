@@ -20,6 +20,7 @@ package storage
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/Masterminds/squirrel"
@@ -147,31 +148,11 @@ func (s *RuleStore) AddRule(userId int, rule *models.Rule) error {
 		return fmt.Errorf("begin tx: %v", err)
 	}
 
-	// Increase remaining rules rule_order by on.
-	// Due to unique constraint a temporary value will need to be first set.
-	updateSql := `
-				UPDATE rules
-				SET rule_order = -rule_order
-				WHERE user_id = $1 AND rule_order >= $2;
-`
-	_, err = tx.tx.Exec(updateSql, userId, rule.Order)
-	if err != nil {
-		return getDatabaseError(err, s, "increase rule order")
-	}
-
-	updateSql = `UPDATE rules
-				SET rule_order = -rule_order +1
-				WHERE user_id = $1 AND -rule_order >= $2;`
-
-	_, err = tx.tx.Exec(updateSql, userId, rule.Order)
-	if err != nil {
-		return getDatabaseError(err, s, "increase rule order")
-	}
-
 	// insert rule
 	query := s.sq.Insert("rules").
 		Columns("user_id", "name", "description", "enabled", "rule_order", "mode").
-		Values(userId, rule.Name, rule.Description, rule.Enabled, rule.Order, rule.Mode).
+		Values(userId, rule.Name, rule.Description, rule.Enabled,
+			squirrel.Expr("(SELECT COALESCE(MAX(rule_order)+1, 1) FROM rules WHERE user_id=?)", userId), rule.Mode).
 		Suffix("RETURNING \"id\"")
 	sql, args, err := query.ToSql()
 	if err != nil {
@@ -512,4 +493,52 @@ func mapActionsToRules(rules []*models.Rule, actions *[]models.RuleAction) {
 			}
 		}
 	}
+}
+
+func (s *RuleStore) ReorderRules(userId int, ids []int) error {
+	var maxOrder = 1
+	err := s.db.Get(&maxOrder, "SELECT MAX(rule_order) FROM rules WHERE user_id=$1", userId)
+	if err != nil {
+		if strings.Contains(err.Error(), "converting NULL to int is unsupported") {
+			// user doesn't have rules
+			e := errors.ErrRecordNotFound
+			e.ErrMsg = "no rules"
+			return e
+		} else {
+			return s.parseError(err, "get max rule_order")
+		}
+	}
+
+	if maxOrder > 100000 {
+		maxOrder = 100
+	} else {
+		maxOrder += 1
+	}
+
+	sql := `UPDATE rules SET rule_order=$1 WHERE id=$2 AND user_id=$3`
+	tx, err := s.db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin tx: %v", err)
+	}
+
+	// iterate each rule and check that exactly one row was changed.
+	for i, v := range ids {
+		out, err := tx.Exec(sql, i+maxOrder, v, userId)
+		if err != nil {
+			tx.Rollback()
+			return s.parseError(err, "reorder rules")
+		}
+		affected, err := out.RowsAffected()
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("get rows affected: %v", err)
+		}
+		if affected != 1 {
+			tx.Rollback()
+			e := errors.ErrRecordNotFound
+			return e
+		}
+	}
+
+	return s.parseError(tx.Commit(), "reorder")
 }

@@ -2,6 +2,7 @@ package integrationtest
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"gopkg.in/h2non/baloo.v3"
@@ -146,6 +147,16 @@ func (suite *UploadDocumentSuite) TestEditSchedulesProcessing() {
 	assert.Equal(suite.T(), (*logs)[5].Status, models.JobFinished)
 }
 
+func (suite *UploadDocumentSuite) TestUploadDuplicate() {
+	// one user cannot upload duplicate
+	uploadDocumentWithStatus(suite.T(), suite.userClient, "text-1.txt", "Lorem ipsum", 60, 200)
+	uploadDocumentWithStatus(suite.T(), suite.userClient, "text-1.txt", "Lorem ipsum", 60, 400)
+
+	// another user can upload the same document
+	uploadDocumentWithStatus(suite.T(), suite.adminClient, "text-1.txt", "Lorem ipsum", 60, 200)
+	uploadDocumentWithStatus(suite.T(), suite.adminClient, "text-1.txt", "Lorem ipsum", 60, 400)
+}
+
 func uploadDocument(t *testing.T, client *baloo.Client, fileName string, contentPrefix string, timeoutS int) string {
 	return uploadDocumentWithStatus(t, client, fileName, contentPrefix, timeoutS, 200)
 }
@@ -249,6 +260,11 @@ func updateDocument(t *testing.T, client *httpClient, doc *api.DocumentResponse,
 	}
 	req.e.Status(wantHttpStatus).Done()
 	return nil
+}
+
+func updateDocumentMetadata(t *testing.T, client *httpClient, docId string, metadata api.MetadataUpdateRequest, wantHttpStatus int) {
+	client.Post(fmt.Sprintf("/api/v1/documents/%s/metadata", docId)).
+		Json(t, metadata).req.Expect(t).Status(wantHttpStatus).Done()
 }
 
 func getDocumentHistory(t *testing.T, client *httpClient, docId string, wantHttpStatus int) *[]models.DocumentHistory {
