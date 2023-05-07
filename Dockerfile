@@ -1,5 +1,5 @@
 ### Frontend build
-FROM node:18.17-alpine3.17 as frontend
+FROM node:18.14.0-alpine3.17 as frontend
 
 RUN apk update
 RUN apk --no-cache add \
@@ -11,10 +11,12 @@ RUN apk --no-cache add \
     nodejs \
     npm
 
+RUN yarn add react-scripts
+
 WORKDIR /virtualpaper
 COPY . /virtualpaper
 
-RUN cd frontend; npm install
+RUN cd frontend; yarn install
 RUN make build-frontend
 
 # Backend build
@@ -30,14 +32,14 @@ RUN apk --no-cache add \
 
 WORKDIR /virtualpaper
 COPY . /virtualpaper
-COPY --from=frontend /virtualpaper/frontend/dist /virtualpaper/frontend/dist
+COPY --from=frontend /virtualpaper/frontend/build /virtualpaper/frontend/build
 
 RUN go mod download
 RUN make build
 
 
 # Runtime
-FROM alpine:3.18.3
+FROM alpine:3.17.2
 
 RUN apk add \
     tesseract-ocr \
