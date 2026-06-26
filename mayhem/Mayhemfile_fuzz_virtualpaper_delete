@@ -1,0 +1,9 @@
+# Namespaced project name that the target belongs to
+project: virtualpaper
+
+# Target name (preserved from the original integration for corpus/defect continuity)
+target: fuzz_virtualpaper_delete
+
+cmds:
+  - cmd: /mayhem/fuzz_virtualpaper_delete
+    libfuzzer: true
